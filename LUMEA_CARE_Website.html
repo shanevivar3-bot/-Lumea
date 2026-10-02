@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LUMÉA CARE — Serum Order System</title>
+<style>
+:root{--pink:#b84f7f;--light:#fff4f8;--line:#ead4de;--text:#382b32}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#fff8fb,#fcebf3);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:var(--text)}
+.wrap{max-width:760px;margin:auto;padding:24px 16px 45px}.brand{text-align:center;margin:8px 0 22px}.brand h1{margin:0;color:var(--pink);font-size:31px}.brand p{margin:5px 0;color:#8d6b79}
+.card{background:#fff;border:1px solid #f0dfe6;border-radius:22px;padding:20px;margin-bottom:15px;box-shadow:0 8px 28px #d9b8c633}
+h2{font-size:18px;margin:0 0 14px;color:var(--pink)}label{display:block;font-weight:700;font-size:13px;margin:12px 0 6px}
+input,select{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px 13px;font-size:15px;background:#fff;color:var(--text);outline:none}
+input:focus,select:focus{border-color:#c46a91;box-shadow:0 0 0 3px #b84f7f18}
+.item{display:grid;grid-template-columns:minmax(0,1fr) 85px 110px 38px;gap:8px;align-items:end;padding:10px 0;border-bottom:1px solid #f1e4e9}.item:first-child{padding-top:0}
+.pbox{background:var(--light);padding:12px;border-radius:12px;text-align:center;font-weight:700}
+.qty{text-align:center}.remove{height:42px;padding:0;border:0;border-radius:10px;background:#f6e3eb;color:#a33d6b;font-size:20px}
+.btn{border:0;border-radius:13px;padding:13px 16px;font-weight:800;font-size:15px;cursor:pointer}.add{background:#f7e1ea;color:#a23e69;width:100%;margin-top:14px}.save{background:var(--pink);color:#fff;width:100%;margin-top:15px}
+.summary{background:#fff8fb;border-radius:15px;padding:15px;margin-top:18px}.line{display:flex;justify-content:space-between;padding:6px 0}.grand{border-top:1px solid var(--line);margin-top:6px;padding-top:12px;font-size:21px;font-weight:900;color:var(--pink)}
+.small{font-size:12px;color:#92727f;text-align:center;margin-top:12px}.orders{margin-top:14px}.order{border:1px solid var(--line);border-radius:14px;padding:12px;margin:8px 0;background:#fff}.order strong{color:var(--pink)}
+@media(max-width:560px){.item{grid-template-columns:minmax(0,1fr) 68px 90px 34px}.wrap{padding:16px 11px 35px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><h1>LUMÉA CARE</h1><p>Serum Order System</p></div>
+
+  <div class="card">
+    <h2>Customer Details</h2>
+    <label>Customer Name</label><input id="name" placeholder="e.g. Anne Tan">
+    <label>Contact Number</label><input id="contact" placeholder="09XXXXXXXXX" inputmode="tel">
+    <label>Address</label><input id="address" placeholder="Complete delivery address">
+  </div>
+
+  <div class="card">
+    <h2>Order</h2>
+    <div id="items"></div>
+    <button class="btn add" onclick="addItem()">＋ Add Product</button>
+
+    <label>Shipping Fee</label>
+    <input id="shipping" type="number" value="0" min="0" oninput="renderTotal()">
+
+    <div class="summary">
+      <div class="line"><span>Subtotal</span><strong id="subtotal">₱0.00</strong></div>
+      <div class="line"><span>Shipping</span><strong id="shipText">₱0.00</strong></div>
+      <div class="line grand"><span>Grand Total</span><span id="grand">₱0.00</span></div>
+    </div>
+    <button class="btn save" onclick="saveOrder()">Save Order</button>
+    <div class="small">Products and prices are saved on this device.</div>
+  </div>
+
+  <div class="card">
+    <h2>Saved Orders</h2>
+    <div id="orders" class="orders"></div>
+  </div>
+</div>
+
+<script>
+const PRODUCTS=[
+  {name:"GHK-Cu Serum",price:500},
+  {name:"Matrixyl Serum",price:450},
+  {name:"Snap-8 Serum",price:550},
+  {name:"Peptide Radiance Serum",price:500}
+];
+let cart=[];
+
+function money(n){return "₱"+Number(n||0).toLocaleString("en-PH",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function addItem(){cart.push({product:"",qty:1});render()}
+function removeItem(i){cart.splice(i,1);if(!cart.length)addItem();render()}
+function render(){
+ const el=document.getElementById("items");
+ el.innerHTML=cart.map((x,i)=>`
+ <div class="item">
+   <select onchange="cart[${i}].product=this.value;renderTotal()">
+    <option value="">Select product</option>
+    ${PRODUCTS.map(p=>`<option ${x.product===p.name?"selected":""}>${p.name}</option>`).join("")}
+   </select>
+   <input class="qty" type="number" min="1" value="${x.qty}" onchange="cart[${i}].qty=Math.max(1,+this.value||1);renderTotal()">
+   <div class="pbox">${money(PRODUCTS.find(p=>p.name===x.product)?.price||0)}</div>
+   <button class="remove" onclick="removeItem(${i})">×</button>
+ </div>`).join("");
+ renderTotal();
+}
+function renderTotal(){
+ let sub=cart.reduce((s,x)=>s+(PRODUCTS.find(p=>p.name===x.product)?.price||0)*(x.qty||0),0);
+ let ship=+document.getElementById("shipping").value||0;
+ document.getElementById("subtotal").textContent=money(sub);
+ document.getElementById("shipText").textContent=money(ship);
+ document.getElementById("grand").textContent=money(sub+ship);
+}
+function saveOrder(){
+ let name=document.getElementById("name").value.trim();
+ if(!name){alert("Please enter customer name.");return}
+ let valid=cart.filter(x=>x.product);
+ if(!valid.length){alert("Please select at least one product.");return}
+ let sub=valid.reduce((s,x)=>s+(PRODUCTS.find(p=>p.name===x.product).price*x.qty),0);
+ let ship=+document.getElementById("shipping").value||0;
+ let order={id:Date.now(),name,contact:document.getElementById("contact").value,address:document.getElementById("address").value,items:valid,total:sub+ship};
+ let orders=JSON.parse(localStorage.getItem("lumeaCareOrders")||"[]");orders.unshift(order);localStorage.setItem("lumeaCareOrders",JSON.stringify(orders));
+ alert("Order saved!");showOrders();
+}
+function showOrders(){
+ let orders=JSON.parse(localStorage.getItem("lumeaCareOrders")||"[]");
+ document.getElementById("orders").innerHTML=orders.length?orders.map(o=>`<div class="order"><strong>${o.name}</strong><br>${o.items.map(x=>`${x.product} × ${x.qty}`).join("<br>")}<br><b>Total: ${money(o.total)}</b></div>`).join(""):"<div class='small'>No saved orders yet.</div>";
+}
+addItem();showOrders();
+</script>
+</body>
+</html>
